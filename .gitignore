@@ -24,12 +24,19 @@ ExportedObj/
 *.pdb
 *.opendb
 
+# idea folder
+.idea
+
 # Unity3D generated meta files
 *.pidb.meta
 *.pdb.meta
 
 # Unity3D Generated File On Crash Reports
 sysinfo.txt
+
+# Unity3D Editor Jetbrain plugin
+UnitySDK/Assets/Plugins/Editor/JetBrains/
+UnitySDK/Assets/Plugins/Editor/JetBrains.meta
 
 # Builds
 *.apk
