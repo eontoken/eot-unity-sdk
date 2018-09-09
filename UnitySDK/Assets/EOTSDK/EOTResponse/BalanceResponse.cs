@@ -8,7 +8,7 @@ namespace EOTSDK.EOTResponse
     public class Token
     {
         [SerializeField] private TokenCode coin_code;
-        public decimal amount;
+        public string amount;
 
         public TokenCode tokenCode
         {

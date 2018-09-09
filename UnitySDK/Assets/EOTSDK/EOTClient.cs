@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Globalization;
 using EOTSDK.EOTDefines;
@@ -10,11 +11,10 @@ namespace EOTSDK
 {
     public class EOTClient
     {
+        private static EOTClient _instance;
+
         private string _appID;
         private string _appKey;
-
-        private bool _isNetworkError;
-        private string _networkError;
 
         private BalanceResponse _balanceResponse;
         private VerifyRequestResponse _verifyRequestResponse;
@@ -22,11 +22,11 @@ namespace EOTSDK
         private TransferRequestResponse _transferRequestResponse;
         private TransferResultResponse _transferResultResponse;
 
-        private UserBalanceResult UserBalanceResult { get; set; }
-        private UserTransferResult UserTransferResult { get; set; }
-        private UserVerifyResult UserVerifyResult { get; set; }
+        public UserBalanceResult UserBalanceResult { get; private set; }
+        public UserTransferResult UserTransferResult { get; private set; }
+        public UserVerifyResult UserVerifyResult { get; private set; }
 
-        public EOTClient(string appID, string appKey)
+        private EOTClient(string appID, string appKey)
         {
             _appID = appID;
             _appKey = appKey;
@@ -34,6 +34,29 @@ namespace EOTSDK
             UserVerifyResult = new UserVerifyResult();
             UserTransferResult = new UserTransferResult();
             UserBalanceResult = new UserBalanceResult();
+        }
+
+        public static EOTClient Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    throw new Exception("Instance is not created, use Init() first.");
+                }
+
+                return _instance;
+            }
+        }
+
+        public static void Init(string appID, string appKey)
+        {
+            if (_instance != null)
+            {
+                throw new Exception("Instance has been created.");
+            }
+
+            _instance = new EOTClient(appID, appKey);
         }
 
         // 验证用户
@@ -99,7 +122,7 @@ namespace EOTSDK
         }
 
         // 确认交易
-        public IEnumerator Transfer(string transferFrom, string transferTo, TokenCode tokenCode, decimal amount)
+        public IEnumerator Transfer(string transferFrom, string transferTo, TokenCode tokenCode, string amount)
         {
             yield return GetUserTransferID(transferFrom, transferTo, tokenCode, amount);
 
@@ -126,7 +149,7 @@ namespace EOTSDK
 
             // 打开浏览器，让用户自行验证
             string webURl = string.Format(EOTWeb.UserTransfer, _appID, _transferRequestResponse.transactionID,
-                transferFrom, transferTo, tokenCode, amount);
+                transferFrom, transferTo, (int)tokenCode, amount);
             Application.OpenURL(webURl);
             yield return new WaitForSeconds(6.0f);
 
@@ -175,12 +198,11 @@ namespace EOTSDK
 
             yield return http.Send(request);
 
-            _isNetworkError = http.IsSuccessful();
-            _networkError = http.Error();
-
-            if (!_isNetworkError)
+            if (http.IsSuccessful())
             {
                 Response resp = http.Response();
+                Debug.Log("BalanceResponse: " + resp.Body());
+
                 _balanceResponse = JsonUtility.FromJson<BalanceResponse>(resp.Body());
 
                 if (_balanceResponse.success)
@@ -195,15 +217,13 @@ namespace EOTSDK
                     UserBalanceResult.Msg = _balanceResponse.msg;
                     UserBalanceResult.Balance = null;
                 }
-
-                Debug.Log("BalanceResponse: " + JsonUtility.ToJson(_balanceResponse));
             }
             else
             {
                 UserBalanceResult.Code = EOTConstant.CODE_NETWORK_ERROR;
                 UserBalanceResult.Msg = EOTConstant.MSG_NETWORK_ERROR;
 
-                Debug.LogError("NetWorkError: " + _networkError);
+                Debug.LogError("NetWorkError: " + http.Error());
             }
         }
 
@@ -220,19 +240,16 @@ namespace EOTSDK
 
             yield return http.Send(request);
 
-            _isNetworkError = http.IsSuccessful();
-            _networkError = http.Error();
-
-            if (!_isNetworkError)
+            if (http.IsSuccessful())
             {
                 Response resp = http.Response();
-                _verifyRequestResponse = JsonUtility.FromJson<VerifyRequestResponse>(resp.Body());
+                Debug.Log("VerifyRequestResponse: " + resp.Body());
 
-                Debug.Log("VerifyRequestResponse: " + JsonUtility.ToJson(_verifyRequestResponse));
+                _verifyRequestResponse = JsonUtility.FromJson<VerifyRequestResponse>(resp.Body());
             }
             else
             {
-                Debug.LogError("NetWorkError: " + _networkError);
+                Debug.LogError("NetWorkError: " + http.Error());
             }
         }
 
@@ -250,52 +267,46 @@ namespace EOTSDK
 
             yield return http.Send(request);
 
-            _isNetworkError = http.IsSuccessful();
-            _networkError = http.Error();
-
-            if (!_isNetworkError)
+            if (http.IsSuccessful())
             {
                 Response resp = http.Response();
-                _verifyResultResponse = JsonUtility.FromJson<VerifyResultResponse>(resp.Body());
+                Debug.Log("VerifyResultResponse: " + resp.Body());
 
-                Debug.Log("VerifyResultResponse: " + JsonUtility.ToJson(_verifyResultResponse));
+                _verifyResultResponse = JsonUtility.FromJson<VerifyResultResponse>(resp.Body());
             }
             else
             {
-                Debug.LogError("NetWorkError: " + _networkError);
+                Debug.LogError("NetWorkError: " + http.Error());
             }
         }
 
         // 获取用户转账事务ID
         private IEnumerator GetUserTransferID(string transferFrom, string transferTo,
-            TokenCode tokenCode, decimal amount)
+            TokenCode tokenCode, string amount)
         {
             FormData formData = new FormData()
                 .AddField("app_id", _appID)
                 .AddField("app_key", _appKey)
                 .AddField("transfer_from", transferFrom)
                 .AddField("transfer_to", transferTo)
-                .AddField("coin_code", ((int)tokenCode).ToString())
-                .AddField("coin_amount", amount.ToString(CultureInfo.InvariantCulture));
+                .AddField("coin_code", ((int) tokenCode).ToString())
+                .AddField("coin_amount", amount);
 
             Request request = new Request(EOTAPI.TransferRequest).Post(RequestBody.From(formData));
             Client http = new Client();
 
             yield return http.Send(request);
 
-            _isNetworkError = http.IsSuccessful();
-            _networkError = http.Error();
-
-            if (!_isNetworkError)
+            if (http.IsSuccessful())
             {
                 Response resp = http.Response();
-                _transferRequestResponse = JsonUtility.FromJson<TransferRequestResponse>(resp.Body());
+                Debug.Log("TransferRequestResponse: " + resp.Body());
 
-                Debug.Log("TransferRequestResponse: " + JsonUtility.ToJson(_transferRequestResponse));
+                _transferRequestResponse = JsonUtility.FromJson<TransferRequestResponse>(resp.Body());
             }
             else
             {
-                Debug.LogError("NetWorkError: " + _networkError);
+                Debug.LogError("NetWorkError: " + http.Error());
             }
         }
 
@@ -314,19 +325,16 @@ namespace EOTSDK
 
             yield return http.Send(request);
 
-            _isNetworkError = http.IsSuccessful();
-            _networkError = http.Error();
-
-            if (!_isNetworkError)
+            if (http.IsSuccessful())
             {
                 Response resp = http.Response();
-                _transferResultResponse = JsonUtility.FromJson<TransferResultResponse>(resp.Body());
+                Debug.Log("TransferResultResponse: " + resp.Body());
 
-                Debug.Log("TransferResultResponse: " + JsonUtility.ToJson(_transferResultResponse));
+                _transferResultResponse = JsonUtility.FromJson<TransferResultResponse>(resp.Body());
             }
             else
             {
-                Debug.LogError("NetWorkError: " + _networkError);
+                Debug.LogError("NetWorkError: " + http.Error());
             }
         }
     }

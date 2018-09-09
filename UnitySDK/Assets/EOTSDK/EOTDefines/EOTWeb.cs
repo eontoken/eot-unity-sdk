@@ -7,17 +7,17 @@
 
         // 用户验证地址
         public const string UserVerify = baseURL + "verify/?" +
-                                         "app_id={0}&" +
-                                         "app_user={1}&" +
-                                         "verify_id={2}";
+                                         "appid={0}&" +
+                                         "appuser={1}&" +
+                                         "verifyid={2}";
 
         // 转账确认地址
         public const string UserTransfer = baseURL + "transfer/?" +
-                                           "app_id={0}&" +
-                                           "transfer_transaction_id={1}&" +
-                                           "transfer_from={2}&" +
-                                           "transfer_to={3}&" +
-                                           "coin_code={4}&" +
-                                           "coin_amount={5}";
+                                           "appid={0}&" +
+                                           "tid={1}&" +
+                                           "from={2}&" +
+                                           "to={3}&" +
+                                           "coin={4}&" +
+                                           "amount={5}";
     }
 }

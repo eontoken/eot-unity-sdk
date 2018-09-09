@@ -9,8 +9,8 @@ namespace EOTSDK.EOTResult
 
         public UserVerifyResult()
         {
-            Code = EOTConstant.CODE_SUCCESS;
-            Msg = EOTConstant.MSG_SUCCESS;
+            Code = EOTConstant.CODE_NETWORK_ERROR;
+            Msg = EOTConstant.MSG_NETWORK_ERROR;
         }
     }
 }
