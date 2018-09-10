@@ -47,6 +47,8 @@ namespace EOTSDK.Examples
         // Use this for initialization
         private void Start()
         {
+            Screen.SetResolution(480, 768, false);
+
             EOTClient.Init(DemoUtils.DEMO_APP_ID, DemoUtils.DEMO_APP_KEY);
             ShowStartPanel();
         }
